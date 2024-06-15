@@ -24,10 +24,10 @@ def main():
 
     val_loss = evaluate(model, val_loader, device)
     model_size = measure_model_size(model)
-	inference_time = measure_inference_time(model, val_loader, device)
+    inference_time = measure_inference_time(model, val_loader, device)
     print(f"Validation Loss: {val_loss}")
     print(f"Model Size: {model_size} MB")
-	print(f"Inference Time: {inference_time} seconds")
+    print(f"Inference Time: {inference_time} seconds")
 
 if __name__ == "__main__":
     main()
