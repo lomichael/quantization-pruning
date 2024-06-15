@@ -1,5 +1,6 @@
 import torch
 import time
+import numpy as np
 
 def evaluate(model, data_loader, device):
     model = model.eval()
