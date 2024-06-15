@@ -58,8 +58,8 @@ def main():
     train_texts, val_texts = train_test_split(texts, test_size=0.1)
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 
-	# Set the padding token to the EOS token
-	tokenizer.pad_token = tokenizer.eos_token
+    # Set the padding token to the EOS token
+    tokenizer.pad_token = tokenizer.eos_token
 
     train_dataset = CustomDataset(train_texts, tokenizer, max_len=128)
     val_dataset = CustomDataset(val_texts, tokenizer, max_len=128)
