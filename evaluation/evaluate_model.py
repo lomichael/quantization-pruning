@@ -6,6 +6,7 @@ import torch
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from torch.utils.data import DataLoader
 import pandas as pd
+import numpy as np
 from datasets.custom_dataset import CustomDataset
 from evaluation.evaluation_utils import evaluate, measure_model_size, measure_inference_time
 
