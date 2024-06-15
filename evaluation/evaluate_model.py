@@ -14,6 +14,9 @@ def main():
     df = pd.read_csv('data.csv')  # Assuming you have a dataset in CSV format
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 
+    # Set the padding token to the EOS token
+    tokenizer.pad_token = tokenizer.eos_token
+
     val_texts = df['text'].tolist()
     val_dataset = CustomDataset(val_texts, tokenizer, max_len=128)
     val_loader = DataLoader(val_dataset, batch_size=4)
