@@ -73,12 +73,15 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=2e-5)
 
     # Training loop
+	print("Start of training loop")
     for epoch in range(3):
         train_loss = train(model, train_loader, optimizer, device)
         val_loss = evaluate(model, val_loader, device)
         print(f"Epoch {epoch+1}:")
         print(f"Train loss: {train_loss}")
         print(f"Validation loss: {val_loss}")
+	
+	print("End of training loop")
 
     # Save the model
     torch.save(model.state_dict(), 'baseline_model.pth')
