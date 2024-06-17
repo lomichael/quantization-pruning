@@ -18,9 +18,23 @@ def quantize_model(model):
     for name, module in model.named_modules():
         if isinstance(module, torch.nn.Embedding):
             module.qconfig = None
+        elif isinstance(module, torch.nn.Linear):
+            # Explicitly set the quantization scheme to per-tensor affine
+            module.qconfig = torch.quantization.QConfig(
+                activation=torch.quantization.observer.MinMaxObserver.with_args(qscheme=torch.per_tensor_affine),
+                weight=torch.quantization.default_weight_observer
+            )
     
     torch.quantization.prepare(model, inplace=True)
-    return torch.quantization.convert(model, inplace=True)
+    return model
+
+def run_observers(model, data_loader, device):
+    model.eval()
+    with torch.no_grad():
+        for batch in data_loader:
+            inputs = batch['input_ids'].to(device)
+            model(inputs)
+    return model
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -37,6 +51,12 @@ def main():
 
     # Quantize the model
     quantized_model = quantize_model(model)
+    
+    # Run observers
+    quantized_model = run_observers(quantized_model, val_loader, device)
+    
+    # Convert the model to quantized version
+    quantized_model = torch.quantization.convert(quantized_model, inplace=True)
     
     # Move the quantized model to CPU for evaluation
     quantized_model = quantized_model.cpu()
