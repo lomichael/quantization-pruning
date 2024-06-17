@@ -82,6 +82,7 @@ The following metrics were obtained by evaluating the baseline and optimized mod
 8. **Apply pruning:**
 	```bash
 	python pruning/unstructured_pruning.py
+	python pruning/structured_pruning.py
 	```
 
 ## Project Roadmap
