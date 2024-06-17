@@ -14,11 +14,10 @@ def quantize_model(model):
     # Set quantization configuration for the entire model
     model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
     
-    # Set specific quantization configuration for embedding layers
-    embedding_qconfig = torch.quantization.float_qparams_weight_only_qconfig
+    # Remove quantization configuration from embedding layers
     for name, module in model.named_modules():
         if isinstance(module, torch.nn.Embedding):
-            module.qconfig = embedding_qconfig
+            module.qconfig = None
     
     torch.quantization.prepare(model, inplace=True)
     return torch.quantization.convert(model, inplace=True)
