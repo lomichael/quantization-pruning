@@ -40,7 +40,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     df = pd.read_csv('data.csv')  # Assuming you have a dataset in CSV format
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-	tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token = tokenizer.eos_token
 
     val_texts = df['text'].tolist()
     val_dataset = CustomDataset(val_texts, tokenizer, max_len=128)
