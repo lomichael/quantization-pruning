@@ -8,7 +8,7 @@ from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from torch.utils.data import DataLoader
 import pandas as pd
 from datasets.custom_dataset import CustomDataset
-from utils.evaluation_utils import evaluate, measure_model_size, measure_inference_time
+from evaluation.evaluation_utils import evaluate, measure_model_size, measure_inference_time
 
 def apply_pruning(model, amount=0.5):
     for name, module in model.named_modules():

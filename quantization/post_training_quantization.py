@@ -8,7 +8,7 @@ from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from torch.utils.data import DataLoader
 import pandas as pd
 from datasets.custom_dataset import CustomDataset
-from utils.evaluation_utils import evaluate, measure_model_size, measure_inference_time
+from evaluation.evaluation_utils import evaluate, measure_model_size, measure_inference_time
 
 def quantize_model(model):
     model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
