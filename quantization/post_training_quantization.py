@@ -8,10 +8,18 @@ from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from torch.utils.data import DataLoader
 import pandas as pd
 from datasets.custom_dataset import CustomDataset
-from evaluation.evaluation_utils import evaluate, measure_model_size, measure_inference_time
+from utils.evaluation_utils import evaluate, measure_model_size, measure_inference_time
 
 def quantize_model(model):
+    # Set quantization configuration for the entire model
     model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+    
+    # Set specific quantization configuration for embedding layers
+    embedding_qconfig = torch.quantization.float_qparams_weight_only_qconfig
+    for name, module in model.named_modules():
+        if isinstance(module, torch.nn.Embedding):
+            module.qconfig = embedding_qconfig
+    
     torch.quantization.prepare(model, inplace=True)
     return torch.quantization.convert(model, inplace=True)
 
