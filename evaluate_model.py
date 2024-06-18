@@ -42,8 +42,9 @@ def main():
     }
 
     logging.info("Evaluating the quantized model")
-    quantized_model = apply_dynamic_quantization(GPT2LMHeadModel.from_pretrained('gpt2').to('cpu'))
-    quantized_model.load_state_dict(torch.load('baseline_model.pth', map_location='cpu'))
+    model_for_quantization = GPT2LMHeadModel.from_pretrained('gpt2')
+    model_for_quantization.load_state_dict(torch.load('baseline_model.pth'))
+    quantized_model = apply_dynamic_quantization(model_for_quantization.to('cpu'))
     val_loader_cpu = DataLoader(val_dataset, batch_size=4)  # Ensure data loader provides data on CPU
     val_loss = evaluate(quantized_model, val_loader_cpu, torch.device('cpu'))  # Ensure evaluation is done on CPU
     model_size = measure_model_size(quantized_model)
@@ -63,8 +64,9 @@ def main():
     logging.info(f"Inference Time per Batch: {avg_batch_time} seconds")
 
     logging.info("Evaluating the pruned model")
-    pruned_model = apply_pruning(GPT2LMHeadModel.from_pretrained('gpt2').to(device))
-    pruned_model.load_state_dict(torch.load('baseline_model.pth'))
+    model_for_pruning = GPT2LMHeadModel.from_pretrained('gpt2')
+    model_for_pruning.load_state_dict(torch.load('baseline_model.pth'))
+    pruned_model = apply_pruning(model_for_pruning.to(device))
     val_loss = evaluate(pruned_model, val_loader, device)
     model_size = measure_model_size(pruned_model)
     total_inference_time, avg_batch_time = measure_inference_time(pruned_model, val_loader, device)
@@ -83,8 +85,9 @@ def main():
     logging.info(f"Inference Time per Batch: {avg_batch_time} seconds")
 
     logging.info("Evaluating the quantized + pruned model")
-    quantized_pruned_model = apply_dynamic_quantization(apply_pruning(GPT2LMHeadModel.from_pretrained('gpt2').to('cpu')))
-    quantized_pruned_model.load_state_dict(torch.load('baseline_model.pth', map_location='cpu'))
+    model_for_quant_prune = GPT2LMHeadModel.from_pretrained('gpt2')
+    model_for_quant_prune.load_state_dict(torch.load('baseline_model.pth'))
+    quantized_pruned_model = apply_dynamic_quantization(apply_pruning(model_for_quant_prune.to('cpu')))
     val_loss = evaluate(quantized_pruned_model, val_loader_cpu, torch.device('cpu'))
     model_size = measure_model_size(quantized_pruned_model)
     total_inference_time, avg_batch_time = measure_inference_time(quantized_pruned_model, val_loader_cpu, torch.device('cpu'))
