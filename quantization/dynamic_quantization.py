@@ -30,8 +30,10 @@ def apply_dynamic_quantization(model):
     # Explicitly quantize lm_head if it is a linear layer
     if isinstance(model.lm_head, torch.nn.Linear):
         model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
-    elif isinstance(model.lm_head, torch.nn.Module) and hasattr(model.lm_head, 'weight'):
-        model.lm_head.weight = torch.quantization.quantize_dynamic(model.lm_head.weight, {torch.nn.Linear}, dtype=torch.qint8)
+    elif isinstance(model.lm_head, torch.nn.Module):
+        for name, module in model.lm_head.named_children():
+            if isinstance(module, torch.nn.Linear):
+                model.lm_head._modules[name] = torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8)
         logging.info("Quantized custom lm_head layer.")
     else:
         logging.warning("Layer lm_head not found or not an instance of torch.nn.Linear")
