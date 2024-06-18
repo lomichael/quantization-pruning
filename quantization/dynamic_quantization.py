@@ -31,7 +31,7 @@ def apply_dynamic_quantization(model):
     quantize_layer(model)
 
     # Explicitly handle lm_head
-    logging.info(f"Handling lm_head explicitly")
+    logging.info("Handling lm_head explicitly")
     if isinstance(model.lm_head, torch.nn.Linear):
         logging.info("Quantizing linear lm_head layer.")
         model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
@@ -47,6 +47,11 @@ def apply_dynamic_quantization(model):
                 quantize_layer(module, f"lm_head.{name}")
     else:
         logging.warning("Layer lm_head not found or not an instance of torch.nn.Linear")
+
+    # Additional logging to verify lm_head quantization
+    logging.info(f"lm_head type after quantization: {type(model.lm_head)}")
+    if hasattr(model.lm_head, 'weight'):
+        logging.info(f"lm_head weight dtype: {model.lm_head.weight.dtype}")
 
     return model
 
