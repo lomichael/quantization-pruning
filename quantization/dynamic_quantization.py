@@ -1,13 +1,9 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import torch
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from torch.utils.data import DataLoader
 import pandas as pd
 from datasets.custom_dataset import CustomDataset
-from evaluation.evaluation_utils import evaluate, measure_model_size, measure_inference_time
+from utils.evaluation_utils import evaluate, measure_model_size, measure_inference_time
 import logging
 from tqdm import tqdm
 
@@ -42,9 +38,9 @@ def main():
     
     logging.info("Evaluating the quantized model")
     val_loader_cpu = DataLoader(val_dataset, batch_size=4)  # Ensure data loader provides data on CPU
-    val_loss = evaluate(quantized_model, val_loader_cpu, torch.device('cpu'))  # Ensure evaluation is done on CPU
+    val_loss = evaluate(quantized_model.cpu(), val_loader_cpu, torch.device('cpu'))  # Ensure evaluation is done on CPU
     model_size = measure_model_size(quantized_model)
-    total_inference_time, avg_batch_time = measure_inference_time(quantized_model, val_loader_cpu, torch.device('cpu'))
+    total_inference_time, avg_batch_time = measure_inference_time(quantized_model.cpu(), val_loader_cpu, torch.device('cpu'))
     
     logging.info(f"Validation Loss after Quantization: {val_loss}")
     logging.info(f"Model Size after Quantization: {model_size} MB")
