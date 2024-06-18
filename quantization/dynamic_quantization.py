@@ -40,15 +40,17 @@ def apply_dynamic_quantization(model):
 
     if isinstance(model.lm_head, torch.nn.Linear):
         logging.info("Quantizing linear lm_head layer.")
-        model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
-        logging.info(f"lm_head quantized: {model.lm_head.weight.dtype}")
+        quantized_lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
+        logging.info(f"lm_head quantized: {quantized_lm_head.weight.dtype}")
+        model.lm_head = quantized_lm_head  # Direct replacement
     elif isinstance(model.lm_head, torch.nn.Module):
         for name, module in model.lm_head.named_children():
             logging.debug(f"Checking lm_head child layer: {name}, type: {type(module)}")
             if isinstance(module, torch.nn.Linear):
                 logging.info(f"Quantizing linear layer in lm_head: {name}")
-                model.lm_head._modules[name] = torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8)
-                logging.info(f"Quantized {name} in lm_head to dtype {model.lm_head._modules[name].weight.dtype}")
+                quantized_child = torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8)
+                logging.info(f"Quantized {name} in lm_head to dtype {quantized_child.weight.dtype}")
+                model.lm_head._modules[name] = quantized_child
             else:
                 quantize_layer(module, f"lm_head.{name}")  # Recursively quantize nested modules within lm_head
         logging.info("Quantized custom lm_head layer.")
