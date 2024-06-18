@@ -14,41 +14,23 @@ import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def apply_dynamic_quantization(model):
-    logging.info("Applying dynamic quantization")
+	logging.info("Applying dynamic quantization")
 
-    def quantize_layer(module, prefix=''):
-        for name, child in module.named_children():
-            full_name = f"{prefix}.{name}" if prefix else name
-            logging.debug(f"Checking layer: {full_name}, type: {type(child)}")
-            if isinstance(child, torch.nn.Linear):
-                logging.info(f"Quantizing layer: {full_name}")
-                quantized_child = torch.quantization.quantize_dynamic(child, {torch.nn.Linear}, dtype=torch.qint8)
-                logging.info(f"Quantized layer: {full_name} to dtype {quantized_child.weight.dtype}")
-                module._modules[name] = quantized_child
-            elif isinstance(child, torch.nn.Module):
-                quantize_layer(child, full_name)
+    # Extract lm_head layer
+    lm_head = model.lm_head
+    logging.debug(f"lm_head initial type: {type(lm_head)}")
+    logging.debug(f"lm_head initial weight dtype: {lm_head.weight.dtype}")
 
-    # Apply dynamic quantization to the entire model
-    quantize_layer(model)
+    # Quantize lm_head separately
+    quantized_lm_head = torch.quantization.quantize_dynamic(lm_head, {torch.nn.Linear}, dtype=torch.qint8)
+    logging.debug(f"lm_head quantized weight dtype: {quantized_lm_head.weight().dtype}")
 
-    # Explicitly handle lm_head
-    logging.info("Handling lm_head explicitly")
-    logging.debug(f"lm_head initial type: {type(model.lm_head)}")
-    logging.debug(f"lm_head initial weight dtype: {model.lm_head.weight.dtype if hasattr(model.lm_head, 'weight') else 'No weight attribute'}")
+    # Replace the original lm_head with the quantized version
+    model.lm_head = quantized_lm_head
 
-    if isinstance(model.lm_head, torch.nn.Linear):
-        logging.info("Quantizing linear lm_head layer.")
-        quantized_lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
-        logging.info(f"lm_head quantized: {quantized_lm_head.weight.dtype}")
-        model.lm_head = quantized_lm_head  # Direct replacement
-    else:
-        logging.warning("lm_head is not an instance of torch.nn.Linear, applying quantization recursively if needed.")
-        quantize_layer(model.lm_head, 'lm_head')
-
-    # Final check and log
     logging.info(f"Final lm_head type: {type(model.lm_head)}")
-    logging.info(f"Final lm_head weight dtype: {model.lm_head.weight.dtype if hasattr(model.lm_head, 'weight') else 'No weight attribute'}")
-    
+    logging.info(f"Final lm_head weight dtype: {model.lm_head.weight().dtype}")
+
     return model
 
 def verify_quantization(model):
