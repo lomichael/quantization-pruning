@@ -26,9 +26,17 @@ def apply_dynamic_quantization(model):
                 if isinstance(sub_module, torch.nn.Linear):
                     torch.quantization.quantize_dynamic(sub_module, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
     
+    # Inspect model structure
+    logging.info("Model structure:")
+    for name, module in model.named_modules():
+        logging.info(f"Layer: {name}, Type: {type(module)}")
+
     # Explicitly quantize the lm_head layer if it exists
     if hasattr(model, 'lm_head') and isinstance(model.lm_head, torch.nn.Linear):
         model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
+    else:
+        logging.warning("Layer lm_head not found or not an instance of torch.nn.Linear")
+
     return model
 
 def verify_quantization(model):
