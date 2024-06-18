@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import torch
 import torch.nn.utils.prune as prune
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
@@ -42,9 +38,10 @@ def main():
     apply_pruning(model)
     
     logging.info("Evaluating the pruned model")
-    val_loss = evaluate(model, val_loader, device)
+    val_loader_cpu = DataLoader(val_dataset, batch_size=4)  # Ensure data loader provides data on CPU
+    val_loss = evaluate(model.cpu(), val_loader_cpu, torch.device('cpu'))  # Ensure evaluation is done on CPU
     model_size = measure_model_size(model)
-    total_inference_time, avg_batch_time = measure_inference_time(model, val_loader, device)
+    total_inference_time, avg_batch_time = measure_inference_time(model.cpu(), val_loader_cpu, torch.device('cpu'))
     
     logging.info(f"Validation Loss after Pruning: {val_loss}")
     logging.info(f"Model Size after Pruning: {model_size} MB")

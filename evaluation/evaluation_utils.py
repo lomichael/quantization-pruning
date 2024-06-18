@@ -1,9 +1,11 @@
 import torch
 import time
 import numpy as np
+from tqdm import tqdm
 
 def evaluate(model, data_loader, device):
-    model = model.eval()
+    model = model.to(device)
+    model.eval()
     losses = []
 
     with torch.no_grad():
@@ -31,14 +33,22 @@ def measure_model_size(model):
     return size_all_mb
 
 def measure_inference_time(model, data_loader, device):
-    model = model.eval()
-    start_time = time.time()
+    model = model.to(device)
+    model.eval()
+    batch_times = []
 
     with torch.no_grad():
-        for d in data_loader:
+        for d in tqdm(data_loader, desc="Measuring Inference Time"):
             input_ids = d['input_ids'].to(device)
+
+            start_time = time.time()
             outputs = model(input_ids=input_ids)
+            end_time = time.time()
 
-    end_time = time.time()
-    return end_time - start_time
+            batch_time = end_time - start_time
+            batch_times.append(batch_time)
 
+    total_time = sum(batch_times)
+    avg_batch_time = total_time / len(batch_times)
+    
+    return total_time, avg_batch_time
