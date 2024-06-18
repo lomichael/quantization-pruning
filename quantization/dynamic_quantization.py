@@ -16,10 +16,12 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 def manually_quantize_linear_layer(layer):
     # Quantize the weights manually
     quantized_weight = torch.quantize_per_tensor(layer.weight.data, scale=0.1, zero_point=0, dtype=torch.qint8)
-    # Replace the layer's weights with the quantized weights
-    layer.weight.data = quantized_weight.dequantize()
-    # Return the modified layer
-    return layer
+    # Create a new Linear layer with quantized weights
+    quantized_layer = torch.nn.Linear(layer.in_features, layer.out_features)
+    quantized_layer.weight = torch.nn.Parameter(quantized_weight)
+    # Bias is not quantized; keep it as is
+    quantized_layer.bias = layer.bias
+    return quantized_layer
 
 def apply_dynamic_quantization(model):
     logging.info("Applying dynamic quantization")
@@ -30,11 +32,11 @@ def apply_dynamic_quantization(model):
     logging.debug(f"lm_head initial weight dtype: {lm_head.weight.dtype}")
 
     # Manually quantize lm_head
-    lm_head = manually_quantize_linear_layer(lm_head)
-    logging.debug(f"lm_head quantized weight dtype: {lm_head.weight.dtype}")
+    quantized_lm_head = manually_quantize_linear_layer(lm_head)
+    logging.debug(f"Quantized lm_head weight dtype: {quantized_lm_head.weight.dtype}")
 
     # Replace the original lm_head with the manually quantized version
-    model.lm_head = lm_head
+    model.lm_head = quantized_lm_head
 
     logging.info(f"Final lm_head type: {type(model.lm_head)}")
     logging.info(f"Final lm_head weight dtype: {model.lm_head.weight.dtype}")
