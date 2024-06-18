@@ -13,15 +13,29 @@ import logging
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def manually_quantize_linear_layer(layer):
-    # Quantize the weights manually
-    quantized_weight = torch.quantize_per_tensor(layer.weight.data, scale=0.1, zero_point=0, dtype=torch.qint8)
-    # Create a new Linear layer with quantized weights
-    quantized_layer = torch.nn.Linear(layer.in_features, layer.out_features)
-    quantized_layer.weight = torch.nn.Parameter(quantized_weight)
-    # Bias is not quantized; keep it as is
-    quantized_layer.bias = layer.bias
-    return quantized_layer
+class QuantizedLinear(torch.nn.Module):
+    def __init__(self, in_features, out_features, bias=True):
+        super(QuantizedLinear, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.weight = torch.nn.Parameter(torch.Tensor(out_features, in_features))
+        if bias:
+            self.bias = torch.nn.Parameter(torch.Tensor(out_features))
+        else:
+            self.register_parameter('bias', None)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        torch.nn.init.kaiming_uniform_(self.weight, a=5 ** 0.5)
+        if self.bias is not None:
+            fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(self.weight)
+            bound = 1 / fan_in ** 0.5
+            torch.nn.init.uniform_(self.bias, -bound, bound)
+
+    def forward(self, input):
+        quantized_weight = torch.quantize_per_tensor(self.weight, scale=0.1, zero_point=0, dtype=torch.qint8)
+        output = torch.nn.functional.linear(input, quantized_weight.dequantize(), self.bias)
+        return output
 
 def apply_dynamic_quantization(model):
     logging.info("Applying dynamic quantization")
@@ -31,8 +45,11 @@ def apply_dynamic_quantization(model):
     logging.debug(f"lm_head initial type: {type(lm_head)}")
     logging.debug(f"lm_head initial weight dtype: {lm_head.weight.dtype}")
 
-    # Manually quantize lm_head
-    quantized_lm_head = manually_quantize_linear_layer(lm_head)
+    # Manually quantize lm_head using the QuantizedLinear class
+	quantized_lm_head = QuantizedLinear(lm_head.in_features, lm_head.out_features)
+    quantized_lm_head.weight.data = lm_head.weight.data.clone()
+    if lm_head.bias is not None:
+        quantized_lm_head.bias.data = lm_head.bias.data.clone()
     logging.debug(f"Quantized lm_head weight dtype: {quantized_lm_head.weight.dtype}")
 
     # Replace the original lm_head with the manually quantized version
