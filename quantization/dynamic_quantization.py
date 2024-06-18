@@ -35,11 +35,13 @@ def apply_dynamic_quantization(model):
     if isinstance(model.lm_head, torch.nn.Linear):
         logging.info("Quantizing linear lm_head layer.")
         model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
+        logging.info(f"lm_head quantized: {model.lm_head.weight.dtype}")
     elif isinstance(model.lm_head, torch.nn.Module):
         for name, module in model.lm_head.named_children():
             if isinstance(module, torch.nn.Linear):
                 logging.info(f"Quantizing lm_head sub-layer: {name}")
                 model.lm_head._modules[name] = torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8)
+                logging.info(f"lm_head sub-layer quantized: {model.lm_head._modules[name].weight.dtype}")
             else:
                 logging.info(f"Recursively quantizing nested lm_head module: {name}")
                 quantize_layer(module, f"lm_head.{name}")
