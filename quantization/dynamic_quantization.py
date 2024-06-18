@@ -17,35 +17,42 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def apply_dynamic_quantization(model):
     logging.info("Applying dynamic quantization")
 
-    def quantize_layer(module):
+    def quantize_layer(module, prefix=''):
         for name, child in module.named_children():
+            full_name = f"{prefix}.{name}" if prefix else name
             if isinstance(child, torch.nn.Linear):
+                logging.info(f"Quantizing layer: {full_name}")
                 module._modules[name] = torch.quantization.quantize_dynamic(child, {torch.nn.Linear}, dtype=torch.qint8)
+                logging.info(f"Quantized layer: {full_name}")
             elif isinstance(child, torch.nn.Module):
-                quantize_layer(child)
+                quantize_layer(child, full_name)
 
     # Apply dynamic quantization to the entire model
     quantize_layer(model)
 
     # Explicitly handle lm_head
+    logging.info(f"Handling lm_head explicitly")
     if isinstance(model.lm_head, torch.nn.Linear):
+        logging.info("Quantizing linear lm_head layer.")
         model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
-        logging.info("Quantized linear lm_head layer.")
     elif isinstance(model.lm_head, torch.nn.Module):
         for name, module in model.lm_head.named_children():
             if isinstance(module, torch.nn.Linear):
+                logging.info(f"Quantizing lm_head sub-layer: {name}")
                 model.lm_head._modules[name] = torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8)
             else:
-                quantize_layer(module)  # Recursively quantize nested modules within lm_head
-        logging.info("Quantized custom lm_head layer.")
+                logging.info(f"Recursively quantizing nested lm_head module: {name}")
+                quantize_layer(module, f"lm_head.{name}")
     else:
         logging.warning("Layer lm_head not found or not an instance of torch.nn.Linear")
 
     return model
 
 def verify_quantization(model):
+    logging.info("Verifying quantization of model layers")
     for name, module in model.named_modules():
         if isinstance(module, torch.nn.Linear):
+            logging.info(f"Checking quantization status of layer: {name}")
             if module.weight.dtype == torch.qint8:
                 logging.info(f"Layer {name} quantized successfully.")
             else:
