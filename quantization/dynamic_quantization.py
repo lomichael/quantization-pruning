@@ -10,6 +10,7 @@ from datasets.custom_dataset import CustomDataset
 from evaluation.evaluation_utils import evaluate, measure_model_size, measure_inference_time
 import logging
 from tqdm import tqdm
+import copy
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -34,13 +35,15 @@ def apply_dynamic_quantization(model):
     logging.info("Handling lm_head explicitly")
     if isinstance(model.lm_head, torch.nn.Linear):
         logging.info("Quantizing linear lm_head layer.")
-        model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
+        quantized_lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
+        model.lm_head = copy.deepcopy(quantized_lm_head)
         logging.info(f"lm_head quantized: {model.lm_head.weight.dtype}")
     elif isinstance(model.lm_head, torch.nn.Module):
         for name, module in model.lm_head.named_children():
             if isinstance(module, torch.nn.Linear):
                 logging.info(f"Quantizing linear layer in lm_head: {name}")
-                model.lm_head._modules[name] = torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8)
+                quantized_module = torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8)
+                model.lm_head._modules[name] = copy.deepcopy(quantized_module)
                 logging.info(f"Quantized {name} in lm_head to dtype {model.lm_head._modules[name].weight.dtype}")
             else:
                 quantize_layer(module)  # Recursively quantize nested modules within lm_head
