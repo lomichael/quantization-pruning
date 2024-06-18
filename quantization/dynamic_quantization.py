@@ -16,23 +16,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def apply_dynamic_quantization(model):
     logging.info("Applying dynamic quantization")
-    
-    # Quantize the model layers
-    for name, module in model.named_children():
-        if isinstance(module, torch.nn.Linear):
-            torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
-        elif isinstance(module, torch.nn.Sequential) or isinstance(module, torch.nn.ModuleList):
-            for sub_name, sub_module in module.named_children():
-                if isinstance(sub_module, torch.nn.Linear):
-                    torch.quantization.quantize_dynamic(sub_module, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
-    
-    # Inspect model structure
-    logging.info("Model structure:")
-    for name, module in model.named_modules():
-        logging.info(f"Layer: {name}, Type: {type(module)}")
 
-    # Explicitly quantize the lm_head layer if it exists
-    if hasattr(model, 'lm_head') and isinstance(model.lm_head, torch.nn.Linear):
+    def quantize_layer(module):
+        for name, child in module.named_children():
+            if isinstance(child, torch.nn.Linear):
+                module._modules[name] = torch.quantization.quantize_dynamic(child, {torch.nn.Linear}, dtype=torch.qint8)
+            else:
+                quantize_layer(child)
+    
+    # Apply dynamic quantization to the entire model
+    quantize_layer(model)
+
+    # Explicitly quantize lm_head
+    if isinstance(model.lm_head, torch.nn.Linear):
         model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
     else:
         logging.warning("Layer lm_head not found or not an instance of torch.nn.Linear")
