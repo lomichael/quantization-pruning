@@ -22,6 +22,20 @@ def main():
     logging.info("Quantization complete")
     logging.info(f"lm_head weight dtype: {quantized_model.lm_head.weight().dtype}")
 
+	logging.info("Evaluating the quantized model")
+	val_loader_cpu = DataLoader(val_dataset, batch_size=4) # Ensure data loader provides data on CPU
+	val_loss = evaluate(quantized_model.cpu(), val_loader_cpu, torch.device('cpu')) # Ensure evaluation is done on CPU
+	model_size = measure_model_size(quantized_model)
+	total_inference_time, avg_batch_time = measure_inference_time(quantized_model.cpu(), val_loader_cpu, torch.device('cpu'))
+
+	logging.info(f"Validation Loss after Quantization: {val_loss}")
+    logging.info(f"Model Size after Quantization: {model_size} MB")
+    logging.info(f"Total Inference Time after Quantization: {total_inference_time} seconds")
+    logging.info(f"Inference Time per Batch after Quantization: {avg_batch_time} seconds")
+
+    logging.info("Saving the quantized model")
+    torch.save(quantized_model.state_dict(), 'dynamic_quantized_model.pth')
+
 if __name__ == "__main__":
     main()
 
