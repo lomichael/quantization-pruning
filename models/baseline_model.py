@@ -9,56 +9,36 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 from datasets.custom_dataset import CustomDataset
+from tqdm import tqdm
+import logging
+import time
+from evaluation.evaluation_utils import evaluate, measure_model_size, measure_inference_time
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def train(model, data_loader, optimizer, device):
     model = model.train()
     losses = []
-
-    for d in data_loader:
+    for d in tqdm(data_loader, desc="Training"):
         input_ids = d['input_ids'].to(device)
-
         outputs = model(
             input_ids=input_ids,
             labels=input_ids
         )
         loss = outputs.loss
-
         losses.append(loss.item())
-
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-
-    return np.mean(losses)
-
-def evaluate(model, data_loader, device):
-    model = model.eval()
-    losses = []
-
-    with torch.no_grad():
-        for d in data_loader:
-            input_ids = d['input_ids'].to(device)
-
-            outputs = model(
-                input_ids=input_ids,
-                labels=input_ids
-            )
-            loss = outputs.loss
-
-            losses.append(loss.item())
-
     return np.mean(losses)
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    df = pd.read_csv('data.csv')  # Assuming you have a dataset in CSV format
-
-    # Preprocess data
+    df = pd.read_csv('data.csv')
     texts = df['text'].tolist()
     train_texts, val_texts = train_test_split(texts, test_size=0.1)
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-
-    # Set the padding token to the EOS token
     tokenizer.pad_token = tokenizer.eos_token
 
     train_dataset = CustomDataset(train_texts, tokenizer, max_len=128)
@@ -67,24 +47,24 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=4)
 
-    # Model setup
     model = GPT2LMHeadModel.from_pretrained('gpt2')
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=2e-5)
 
-    # Training loop
-    print("Start of training loop")
-    for epoch in range(3):
+    logging.info("Start of training loop")
+    for epoch in range 3):
         train_loss = train(model, train_loader, optimizer, device)
         val_loss = evaluate(model, val_loader, device)
-        print(f"Epoch {epoch+1}:")
-        print(f"Train loss: {train_loss}")
-        print(f"Validation loss: {val_loss}")
-    
-    print("End of training loop")
+        logging.info(f"Epoch {epoch+1}: Train loss: {train_loss}, Validation loss: {val_loss}")
+    logging.info("End of training loop")
 
-    # Save the model
     torch.save(model.state_dict(), 'baseline_model.pth')
+
+    model_size = measure_model_size(model)
+    logging.info(f"Model Size: {model_size} MB")
+
+    total_inference_time, avg_batch_time = measure_inference_time(model, val_loader, device)
+    logging.info(f"Total Inference Time: {total_inference_time} seconds, Inference Time per Batch: {avg_batch_time} seconds")
 
 if __name__ == "__main__":
     main()

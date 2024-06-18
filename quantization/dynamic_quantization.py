@@ -16,14 +16,18 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def apply_dynamic_quantization(model):
     logging.info("Applying dynamic quantization")
-    for name, module in model.named_children():
+    quantized_model = torch.quantization.quantize_dynamic(
+        model, {torch.nn.Linear}, dtype=torch.qint8
+    )
+    return quantized_model
+
+def verify_quantization(model):
+    for name, module in model.named_modules():
         if isinstance(module, torch.nn.Linear):
-            torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
-        elif isinstance(module, torch.nn.Sequential) or isinstance(module, torch.nn.ModuleList):
-            for sub_name, sub_module in module.named_children():
-                if isinstance(sub_module, torch.nn.Linear):
-                    torch.quantization.quantize_dynamic(sub_module, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
-    return model
+            if module.weight().dtype == torch.qint8:
+                logging.info(f"Layer {name} quantized successfully.")
+            else:
+                logging.warning(f"Layer {name} not quantized.")
 
 def main():
     logging.info("Loading dataset")
@@ -44,6 +48,9 @@ def main():
     logging.info("Applying dynamic quantization to the model")
     quantized_model = apply_dynamic_quantization(model)
     
+    logging.info("Verifying the quantization")
+    verify_quantization(quantized_model)
+
     logging.info("Evaluating the quantized model")
     val_loader_cpu = DataLoader(val_dataset, batch_size=4)  # Ensure data loader provides data on CPU
     val_loss = evaluate(quantized_model.cpu(), val_loader_cpu, torch.device('cpu'))  # Ensure evaluation is done on CPU
