@@ -9,7 +9,7 @@ def evaluate(model, data_loader, device):
     losses = []
 
     with torch.no_grad():
-        for d in data_loader:
+        for d in tqdm(data_loader, desc="Evaluating"):
             input_ids = d['input_ids'].to(device)
 
             outputs = model(
