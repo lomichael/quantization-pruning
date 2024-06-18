@@ -1,8 +1,5 @@
 import sys
 import os
-import copy
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import torch
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from torch.utils.data import DataLoader
@@ -43,19 +40,9 @@ def apply_dynamic_quantization(model):
         quantized_lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
         logging.info(f"lm_head quantized: {quantized_lm_head.weight.dtype}")
         model.lm_head = quantized_lm_head  # Direct replacement
-    elif isinstance(model.lm_head, torch.nn.Module):
-        for name, module in model.lm_head.named_children():
-            logging.debug(f"Checking lm_head child layer: {name}, type: {type(module)}")
-            if isinstance(module, torch.nn.Linear):
-                logging.info(f"Quantizing linear layer in lm_head: {name}")
-                quantized_child = torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8)
-                logging.info(f"Quantized {name} in lm_head to dtype {quantized_child.weight.dtype}")
-                model.lm_head._modules[name] = quantized_child
-            else:
-                quantize_layer(module, f"lm_head.{name}")  # Recursively quantize nested modules within lm_head
-        logging.info("Quantized custom lm_head layer.")
     else:
-        logging.warning("Layer lm_head not found or not an instance of torch.nn.Linear")
+        logging.warning("lm_head is not an instance of torch.nn.Linear, applying quantization recursively if needed.")
+        quantize_layer(model.lm_head, 'lm_head')
 
     # Final check and log
     logging.info(f"Final lm_head type: {type(model.lm_head)}")
