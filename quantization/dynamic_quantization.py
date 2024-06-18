@@ -14,7 +14,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def apply_dynamic_quantization(model):
-	logging.info("Applying dynamic quantization")
+    logging.info("Applying dynamic quantization")
 
     # Extract lm_head layer
     lm_head = model.lm_head
