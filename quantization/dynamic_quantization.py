@@ -28,7 +28,7 @@ def apply_dynamic_quantization(model):
 def verify_quantization(model):
     for name, module in model.named_modules():
         if isinstance(module, torch.nn.Linear):
-            if module.weight().dtype == torch.qint8:
+            if module.weight.dtype == torch.qint8:
                 logging.info(f"Layer {name} quantized successfully.")
             else:
                 logging.warning(f"Layer {name} not quantized.")
