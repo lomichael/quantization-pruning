@@ -39,7 +39,7 @@ def apply_dynamic_quantization(model):
     if isinstance(model.lm_head, torch.nn.Linear):
         logging.info("Quantizing linear lm_head layer.")
         quantized_lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
-        logging.info(f"lm_head quantized: {quantized_lm_head.weight().dtype}")
+        logging.info(f"lm_head quantized: {quantized_lm_head.weight.dtype}")
         model.lm_head = quantized_lm_head  # Direct replacement
     else:
         logging.warning("lm_head is not an instance of torch.nn.Linear, applying quantization recursively if needed.")
