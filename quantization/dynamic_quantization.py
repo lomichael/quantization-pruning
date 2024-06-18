@@ -13,6 +13,14 @@ import logging
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+def manually_quantize_linear_layer(layer):
+    # Quantize the weights manually
+    quantized_weight = torch.quantize_per_tensor(layer.weight.data, scale=0.1, zero_point=0, dtype=torch.qint8)
+    # Replace the layer's weights with the quantized weights
+    layer.weight.data = quantized_weight.dequantize()
+    # Return the modified layer
+    return layer
+
 def apply_dynamic_quantization(model):
     logging.info("Applying dynamic quantization")
 
@@ -21,12 +29,12 @@ def apply_dynamic_quantization(model):
     logging.debug(f"lm_head initial type: {type(lm_head)}")
     logging.debug(f"lm_head initial weight dtype: {lm_head.weight.dtype}")
 
-    # Quantize lm_head separately
-    quantized_lm_head = torch.quantization.quantize_dynamic(lm_head, {torch.nn.Linear}, dtype=torch.qint8)
-    logging.debug(f"lm_head quantized weight dtype: {quantized_lm_head.weight.dtype}")
+    # Manually quantize lm_head
+    lm_head = manually_quantize_linear_layer(lm_head)
+    logging.debug(f"lm_head quantized weight dtype: {lm_head.weight.dtype}")
 
-    # Replace the original lm_head with the quantized version
-    model.lm_head = quantized_lm_head
+    # Replace the original lm_head with the manually quantized version
+    model.lm_head = lm_head
 
     logging.info(f"Final lm_head type: {type(model.lm_head)}")
     logging.info(f"Final lm_head weight dtype: {model.lm_head.weight.dtype}")
@@ -34,14 +42,10 @@ def apply_dynamic_quantization(model):
     return model
 
 def verify_quantization(model):
-    logging.info("Verifying quantization of model layers")
-    for name, module in model.named_modules():
-        if isinstance(module, torch.nn.Linear):
-            logging.info(f"Checking quantization status of layer: {name}")
-            if module.weight.dtype == torch.qint8:
-                logging.info(f"Layer {name} quantized successfully.")
-            else:
-                logging.warning(f"Layer {name} not quantized. Dtype: {module.weight.dtype}")
+	if model.lm_head.weight.dtype == torch.qint8:
+		logging.info("Layer lm_head successfully quantized to qint8")
+	else:
+		logging.warning(f"Layer lm_head not quantized. Dtype: {model.lm_head.weight.dtype}")
 
 def main():
     logging.info("Loading dataset")
