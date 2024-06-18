@@ -1,5 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import torch
 from transformers import GPT2LMHeadModel
+from torch.utils.data import DataLoader
+from evaluation.evaluation_utils import evaluate, measure_model_size, measure_inference_time
 import logging
 
 # Setup logging
