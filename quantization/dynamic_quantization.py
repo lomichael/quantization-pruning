@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-
 import torch
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from torch.utils.data import DataLoader
@@ -17,10 +16,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def apply_dynamic_quantization(model):
     logging.info("Applying dynamic quantization")
-    quantized_model = torch.quantization.quantize_dynamic(
-        model, {torch.nn.Linear}, dtype=torch.qint8
-    )
-    return quantized_model
+    for name, module in model.named_children():
+        if isinstance(module, torch.nn.Linear):
+            torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
+        elif isinstance(module, torch.nn.Sequential) or isinstance(module, torch.nn.ModuleList):
+            for sub_name, sub_module in module.named_children():
+                if isinstance(sub_module, torch.nn.Linear):
+                    torch.quantization.quantize_dynamic(sub_module, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
+    return model
 
 def main():
     logging.info("Loading dataset")
@@ -57,4 +60,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
