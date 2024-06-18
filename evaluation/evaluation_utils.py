@@ -1,6 +1,6 @@
 import torch
-import time
 import numpy as np
+import time
 from tqdm import tqdm
 
 def evaluate(model, data_loader, device):
@@ -24,9 +24,9 @@ def evaluate(model, data_loader, device):
 
 def measure_model_size(model):
     param_size = 0
+    buffer_size = 0
     for param in model.parameters():
         param_size += param.nelement() * param.element_size()
-    buffer_size = 0
     for buffer in model.buffers():
         buffer_size += buffer.nelement() * buffer.element_size()
     size_all_mb = (param_size + buffer_size) / 1024**2
@@ -52,3 +52,4 @@ def measure_inference_time(model, data_loader, device):
     avg_batch_time = total_time / len(batch_times)
     
     return total_time, avg_batch_time
+
