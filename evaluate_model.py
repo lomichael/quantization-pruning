@@ -4,7 +4,6 @@ import pandas as pd
 import logging
 from torch.utils.data import DataLoader
 from utils import CustomDataset, apply_dynamic_quantization, apply_pruning, evaluate, measure_model_size, measure_inference_time
-import os
 
 def main():
     logging.basicConfig(level=logging.INFO)
