@@ -46,7 +46,7 @@ def apply_dynamic_quantization(model):
     logging.debug(f"lm_head initial weight dtype: {lm_head.weight.dtype}")
 
     # Manually quantize lm_head using the QuantizedLinear class
-	quantized_lm_head = QuantizedLinear(lm_head.in_features, lm_head.out_features)
+    quantized_lm_head = QuantizedLinear(lm_head.in_features, lm_head.out_features)
     quantized_lm_head.weight.data = lm_head.weight.data.clone()
     if lm_head.bias is not None:
         quantized_lm_head.bias.data = lm_head.bias.data.clone()
@@ -61,10 +61,10 @@ def apply_dynamic_quantization(model):
     return model
 
 def verify_quantization(model):
-	if model.lm_head.weight.dtype == torch.qint8:
-		logging.info("Layer lm_head successfully quantized to qint8")
-	else:
-		logging.warning(f"Layer lm_head not quantized. Dtype: {model.lm_head.weight.dtype}")
+    if model.lm_head.weight.dtype == torch.qint8:
+        logging.info("Layer lm_head successfully quantized to qint8")
+    else:
+        logging.warning(f"Layer lm_head not quantized. Dtype: {model.lm_head.weight.dtype}")
 
 def main():
     logging.info("Loading dataset")
