@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-
 import torch
 import torch.quantization
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
@@ -21,7 +20,7 @@ def quantize_model(model):
     model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
     
     for name, module in model.named_modules():
-        if isinstance(module, torch.nn.Embedding):
+        if isinstance(module, torch.nn.Embedding) or isinstance(module, torch.nn.LayerNorm):
             module.qconfig = None
         elif isinstance(module, torch.nn.Linear):
             module.qconfig = torch.quantization.QConfig(
