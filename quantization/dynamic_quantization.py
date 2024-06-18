@@ -1,5 +1,7 @@
 import sys
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import torch
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from torch.utils.data import DataLoader
@@ -7,7 +9,6 @@ import pandas as pd
 from datasets.custom_dataset import CustomDataset
 from evaluation.evaluation_utils import evaluate, measure_model_size, measure_inference_time
 import logging
-from tqdm import tqdm
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,7 +23,7 @@ def apply_dynamic_quantization(model):
             if isinstance(child, torch.nn.Linear):
                 logging.info(f"Quantizing layer: {full_name}")
                 quantized_child = torch.quantization.quantize_dynamic(child, {torch.nn.Linear}, dtype=torch.qint8)
-                logging.info(f"Quantized layer: {full_name} to dtype {quantized_child.weight.dtype}")
+                logging.info(f"Quantized layer: {full_name} to dtype {quantized_child.weight().dtype}")
                 module._modules[name] = quantized_child
             elif isinstance(child, torch.nn.Module):
                 quantize_layer(child, full_name)
@@ -38,7 +39,7 @@ def apply_dynamic_quantization(model):
     if isinstance(model.lm_head, torch.nn.Linear):
         logging.info("Quantizing linear lm_head layer.")
         quantized_lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
-        logging.info(f"lm_head quantized: {quantized_lm_head.weight.dtype}")
+        logging.info(f"lm_head quantized: {quantized_lm_head.weight().dtype}")
         model.lm_head = quantized_lm_head  # Direct replacement
     else:
         logging.warning("lm_head is not an instance of torch.nn.Linear, applying quantization recursively if needed.")
