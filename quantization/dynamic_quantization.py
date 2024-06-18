@@ -16,6 +16,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def apply_dynamic_quantization(model):
     logging.info("Applying dynamic quantization")
+    
+    # Quantize the model layers
     for name, module in model.named_children():
         if isinstance(module, torch.nn.Linear):
             torch.quantization.quantize_dynamic(module, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
@@ -23,9 +25,10 @@ def apply_dynamic_quantization(model):
             for sub_name, sub_module in module.named_children():
                 if isinstance(sub_module, torch.nn.Linear):
                     torch.quantization.quantize_dynamic(sub_module, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
+    
     # Explicitly quantize the lm_head layer if it exists
     if hasattr(model, 'lm_head') and isinstance(model.lm_head, torch.nn.Linear):
-        torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8, inplace=True)
+        model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
     return model
 
 def verify_quantization(model):
