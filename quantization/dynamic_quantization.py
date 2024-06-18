@@ -23,7 +23,7 @@ def apply_dynamic_quantization(model):
             if isinstance(child, torch.nn.Linear):
                 logging.info(f"Quantizing layer: {full_name}")
                 quantized_child = torch.quantization.quantize_dynamic(child, {torch.nn.Linear}, dtype=torch.qint8)
-                logging.info(f"Quantized layer: {full_name} to dtype {quantized_child.weight().dtype}")
+                logging.info(f"Quantized layer: {full_name} to dtype {quantized_child.weight.dtype}")
                 module._modules[name] = quantized_child
             elif isinstance(child, torch.nn.Module):
                 quantize_layer(child, full_name)
