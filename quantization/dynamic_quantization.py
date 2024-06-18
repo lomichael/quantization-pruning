@@ -23,13 +23,13 @@ def apply_dynamic_quantization(model):
 
     # Quantize lm_head separately
     quantized_lm_head = torch.quantization.quantize_dynamic(lm_head, {torch.nn.Linear}, dtype=torch.qint8)
-    logging.debug(f"lm_head quantized weight dtype: {quantized_lm_head.weight().dtype}")
+    logging.debug(f"lm_head quantized weight dtype: {quantized_lm_head.weight.dtype}")
 
     # Replace the original lm_head with the quantized version
     model.lm_head = quantized_lm_head
 
     logging.info(f"Final lm_head type: {type(model.lm_head)}")
-    logging.info(f"Final lm_head weight dtype: {model.lm_head.weight().dtype}")
+    logging.info(f"Final lm_head weight dtype: {model.lm_head.weight.dtype}")
 
     return model
 
