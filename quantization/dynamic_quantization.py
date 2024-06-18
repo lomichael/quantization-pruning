@@ -30,7 +30,7 @@ def apply_dynamic_quantization(model):
     # Explicitly handle lm_head
     if isinstance(model.lm_head, torch.nn.Linear):
         model.lm_head = torch.quantization.quantize_dynamic(model.lm_head, {torch.nn.Linear}, dtype=torch.qint8)
-		logging.info("Quantized linear lm_head layer.")
+        logging.info("Quantized linear lm_head layer.")
     elif isinstance(model.lm_head, torch.nn.Module):
         for name, module in model.lm_head.named_children():
             if isinstance(module, torch.nn.Linear):
